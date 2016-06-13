@@ -1,0 +1,90 @@
+﻿@model FFSignalRBug.Models.TestModel
+@{
+    ViewBag.Title = "Index";
+}
+
+<!-- signalR -->
+<script type="text/javascript" language="javascript">
+    $(document).ready(function () {
+
+        // Get the hub object, establish progress bar on page
+        var progressNotifier = $.connection.TestHub;
+        $("#progressbar").progressbar();
+
+        // Start logging. This is only for debugging, sends signalR output
+        // to dev tools in the  browser consoles, remove if not needed.
+        $.connection.hub.logging = true;
+
+        // Establish the connection and show the submit button
+        $.connection.hub.start({ transport: ['webSockets'] }).done(function () {
+
+            // Enable the submit button
+            $('#submit').prop('disabled', false);
+
+            // Get the established connection id and shove it in a hidden
+            // input field ready for the model to consume on submit
+            var connID = $.connection.hub.id;
+            $('input[name="ConnectionID"]').val(connID);
+        });
+
+        // This is the client side function that will be called from the server
+        progressNotifier.client.sendMessage = function (message, value) {
+
+            // Call the UpdateProgress function
+            UpdateProgress(message, value);
+        };
+    });
+    function UpdateProgress(message, value) {
+
+        // Establish the result and progress bar DIV objects
+        var result = $("#result");
+        var progBar = $("#progressbar");
+        var percent = $("#percent");
+
+        // Set message & percentage complete
+        result.html(message);
+        percent.html(value + "%");
+
+        // Shown progbar when a value >0 provided
+        if (value > 0) {
+            $("#progressbar").show();
+        }
+
+        // Update progress bar with value
+        progBar.progressbar("value", value);
+    }
+</script>
+
+@using (Html.BeginForm(Model))
+{
+    <div>
+        <table style="position:fixed;left:30px">
+            <tr>
+                <td class="tdAlignLeft" colspan="3">
+                    <p class="pageHeader">Enter some text:</p>
+                </td>
+            </tr>
+            <tr>
+                <td class="tdAlignRight" style="width:120px">
+                    <label for="SomeText" class="lblCustom1">Some Text</label>
+                </td>
+                <td>
+                    <input data-val="true" data-val-required="The Some Text field is required." id="SomeText" name="SomeText" type="text" value="" />
+                    <span class="field-validation-valid" data-valmsg-for="HerdNumber" data-valmsg-replace="true" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button type="submit" id="submit" style="width:100px" disabled="disabled">Start Some Long Process</button>
+                </td>
+            </tr>
+        </table>
+        <div style="width: 300px; margin: 0 auto; position:fixed; top:250px;left:30px">
+            <div id="result" style="font-family: Tahoma; font-size: 0.9em; color: darkgray; margin-top: 2px; padding-bottom: 5px"></div>
+            <div id="progressbar" style="width: 300px; height: 20px;"></div>
+            <div id="percent" style="font-family: Tahoma; font-size: 0.9em; color: darkgray; margin-top: 2px; padding-bottom: 5px; text-align: center;"></div>
+            <input class="tbCustom1" id="ConnectionID" name="ConnectionID" type="hidden" value="" /> <!-- This is set by jquery when page loads -->
+        </div>
+    </div>
+}
+
